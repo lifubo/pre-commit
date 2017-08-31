@@ -1,0 +1,83 @@
+#! /usr/bin/env python
+# -*- encoding: utf-8 -*-
+
+import sys,os,re
+
+#左括号格式修改 输入代码源代码数组 返回处理好的代码
+def find_last(string,str):
+    last_position=-1
+    while True:
+        position=string.find(str,last_position+1)
+        if position==-1:
+            return last_position
+        last_position=position
+def changeFormate(allLines):
+	#保存更新好的数据
+	newLines = []  
+	for tempLine in allLines:
+		needAppend = 1
+		line = tempLine.strip() #去除空格
+		if len(line) > 0:
+			if line[0] == '{':
+				if len(newLines) > 0:
+					lastString = ''
+					lastIndex = 0
+					#找到上一句代码
+					for index in xrange(len(newLines) - 1,-1,-1):
+						if len(newLines[index]) > 0:
+							lastString = newLines[index]
+							lastIndex = index
+							break
+						newLines.remove(newLines[index])
+					if len(lastString) > 0:
+						newLines.pop(index)
+						zhushiIndex = -1
+						zhushiIndex = find_last(lastString,'//')
+						if zhushiIndex != -1:
+							while lastString[zhushiIndex - 1] == ' ':
+								zhushiIndex = zhushiIndex - 1
+							if lastString[zhushiIndex - 1] == ':' and not ('case' in lastString): #排除http://这种情况
+								zhushiIndex = -1	
+						newLines.append(lastString[0:zhushiIndex] + ' {' + lastString[zhushiIndex:])
+						line = line[1:]
+						if len(line) > 1:
+							tempLine = tempLine.replace('{','')
+						else :
+							needAppend = 0
+		if needAppend:
+			newLines.append(tempLine)
+	return newLines
+#把new替换成alloc init
+def changeFormateChangeNew(allLines):
+	#保存更新好的数据
+	newLines = []  
+	for line in allLines:
+		position=line.find(' new]')
+		if position != -1:
+			for index in xrange(position,-1,-1):
+				if line[index] == '[':
+					line = line[:index] + '[' + line[index:]
+					line = line.replace(' new]',' alloc] init]')
+		newLines.append(line)
+	return newLines
+
+print '\n.......................Code Style Checking....................\n'
+
+dirPath = os.popen('pwd').read()
+dirPath = dirPath[:-1]
+files = os.popen('git diff-index --cached --name-only HEAD').read().split("\n")
+for filePath in files:
+	if len(filePath) < 1:
+		continue
+	absolutePath = os.path.join(dirPath,filePath)
+	if len(absolutePath) < 1:
+		continue
+	fileExt = os.path.splitext(absolutePath)[-1]
+	if not(fileExt == '.m' or fileExt == '.h' or fileExt == '.txt'):
+		continue
+	allLines = open(absolutePath,'r').readlines()
+	allLines = changeFormate(allLines)
+	allLines = changeFormateChangeNew(allLines)
+	open(absolutePath,'w').writelines(allLines)
+	os.system('git add ' + absolutePath)
+sys.exit(0)
