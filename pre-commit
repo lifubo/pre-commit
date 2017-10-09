@@ -76,6 +76,8 @@ for filePath in files:
 	if not(fileExt == '.m' or fileExt == '.h' or fileExt == '.txt'):
 		continue
 	os.system('chmod u+wr ' + absolutePath)
+	if os.path.isfile(absolutePath) == False:
+		continue
 	allLines = open(absolutePath,'r').readlines()
 	allLines = changeFormate(allLines)
 	allLines = changeFormateChangeNew(allLines)
